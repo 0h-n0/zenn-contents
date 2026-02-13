@@ -3,7 +3,7 @@ title: "2026年版：LLM使用量分析とコスト最適化の実践ガイド"
 emoji: "📊"
 type: "tech"
 topics: ["llm", "observability", "cost", "monitoring", "ai"]
-published: true
+published: false
 ---
 
 # 2026年版：LLM使用量分析とコスト最適化の実践ガイド

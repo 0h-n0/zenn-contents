@@ -3,7 +3,7 @@ title: "LLMアプリのBCP/DR戦略：99.7%稼働率を実現する実践ガイ�
 emoji: "🛡️"
 type: "tech"
 topics: ["llm", "bcp", "dr", "reliability", "infrastructure"]
-published: true
+published: false
 ---
 
 # LLMアプリのBCP/DR戦略：99.7%稼働率を実現する実践ガイド
