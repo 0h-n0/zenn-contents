@@ -420,3 +420,17 @@ with ApiClient(configuration) as api_client:
 :::message
 この記事はAI（Claude Code）により自動生成されました。内容の正確性については複数の情報源で検証していますが、実際の利用時は公式ドキュメントもご確認ください。
 :::
+
+## 関連する深掘り記事
+
+この記事で紹介した技術について、さらに深掘りした記事を書きました：
+
+- [Infinite-LLM: 分散KVキャッシュで100万トークンのコンテキストを低コストで処理](https://0h-n0.github.io/blog/2026/02/15/infinite-llm-long-context-cost.html) - arXiv論文解説
+- [Beyond ChatGPT: 50社以上の本番LLMデプロイ実態調査とコスト構造分析](https://0h-n0.github.io/blog/2026/02/15/llm-deployment-production-analysis.html) - arXiv論文解説
+- [LLM生成パラメータのコスト最適化: ベイズ最適化で20-40%削減](https://0h-n0.github.io/blog/2026/02/15/llm-hyperparameter-cost-optimization.html) - arXiv論文解説
+- [LLMサービング性能ベンチマーク: レイテンシ・スループット・コスト最適化の徹底比較](https://0h-n0.github.io/blog/2026/02/15/llm-serving-benchmarks-cost-latency.html) - arXiv論文解説
+- [プロンプト圧縮でトークン数40-60%削減: 文レベル符号化による高速LLM推論](https://0h-n0.github.io/blog/2026/02/15/prompt-compression-token-efficiency.html) - arXiv論文解説
+
+:::message
+これらの記事は修士学生レベルを想定した技術的詳細（数式・実装の深掘り）を含みます。
+:::
