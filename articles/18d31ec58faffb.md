@@ -25,7 +25,7 @@ published: false
 
 ## 結論・成果
 
-EDDをPromptfooで実装したところ、**プロンプト改善の試行錯誤が平均3回→1.2回に短縮**、回帰バグ検知率が0%→95%に向上しました。arXiv論文（2601.22025）では、評価なしの「汎用改善」プロンプトが**抽出精度を最大15%劣化させた**ケースも報告されています。
+EDDをPromptfooで実装すると、**テストスイートによる自動比較でプロンプト改善の試行錯誤を大幅に削減**でき、回帰バグの自動検知が可能になります。arXiv論文（2601.22025）では、評価なしの「汎用改善」プロンプトが**抽出パス率を100%→90%に、RAG準拠率を93.3%→80%に劣化させた**ケースが報告されています。
 
 ## 評価駆動開発（EDD）の全体像を理解する
 
@@ -35,7 +35,7 @@ TDD（テスト駆動開発）のLLM版がEDD（Evaluation-Driven Development）
 
 従来は開発者の直感でプロンプトを変更し、数件の出力を目視確認するのが一般的でした。
 
-**よくある間違い**: 「詳細な指示を追加すれば品質が上がる」と考えがちですが、arXivの実験では汎用ルール（「正確に答えよ」「簡潔に」等）の追加でタスク固有の**抽出精度が最大15%劣化**しました。instruction-followingスコアは改善するのに、実タスク性能が下がる「改善パラドックス」が起きます。EDDでは**変更前にテストスイートを用意**してこの問題を防ぎます。
+**よくある間違い**: 「詳細な指示を追加すれば品質が上がる」と考えがちですが、arXivの実験では汎用ルール（「正確に答えよ」「簡潔に」等）の追加でタスク固有の**抽出パス率が10ポイント、RAG準拠率が13ポイント劣化**しました。instruction-followingスコアは改善するのに、実タスク性能が下がる「改善パラドックス」が起きます。EDDでは**変更前にテストスイートを用意**してこの問題を防ぎます。
 
 | 手法 | 改善判定 | 回帰検知 | 再現性 |
 |------|----------|----------|--------|
@@ -56,7 +56,7 @@ TDD（テスト駆動開発）のLLM版がEDD（Evaluation-Driven Development）
 
 ## Promptfooでテストスイートを構築する
 
-Promptfooは、LLMアプリのテストを**YAML宣言型**で管理できるOSSツールです（GitHubスター5,600+、50+プロバイダ対応）。
+Promptfooは、LLMアプリのテストを**YAML宣言型**で管理できるOSSツールです（GitHubスター10,500+、50+プロバイダ対応、2026年2月時点）。
 
 ```bash
 npm install -g promptfoo  # Node.js 20.x以降
@@ -153,7 +153,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions: { pull-requests: write }
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - uses: promptfoo/promptfoo-action@v1
@@ -198,6 +198,16 @@ jobs:
 
 **関連記事:** [LLM品質評価の完全自動化](https://zenn.dev/0h_n0/articles/023494dba67663)（LLM-as-a-Judge詳細）、[LLM本番運用の品質評価自動化](https://zenn.dev/0h_n0/articles/5aa571ec86eaca)（Ragas/DeepEval実装）
 
+## 関連する深掘り記事
+
+本記事で触れた1次情報をさらに深掘りした記事です。
+
+- [論文解説: When "Better" Prompts Hurt — EDPD評価駆動プロンプト開発フレームワーク](https://0h-n0.github.io/blog/2026/02/19/paper-2601-22025.html)（arXiv 2601.22025）
+- [論文解説: EDD for LLM Agents — ライフサイクル全体の評価駆動開発](https://0h-n0.github.io/blog/2026/02/19/paper-2411-13768.html)（arXiv 2411.13768）
+- [論文解説: PromptEval — ANOVAベースのプロンプト次元重要度分析](https://0h-n0.github.io/blog/2026/02/19/paper-2404-04507.html)（arXiv 2404.04507）
+- [NVIDIA技術ブログ解説: LLM評価テクニック完全ガイド — 4層評価フレームワーク](https://0h-n0.github.io/blog/2026/02/19/techblog-nvidia-llm-evaluation.html)
+- [AWS技術ブログ解説: LLM-as-a-Judge on Amazon Bedrock Model Evaluation](https://0h-n0.github.io/blog/2026/02/19/techblog-aws-llm-judge.html)
+
 ## 参考
 
 - [Promptfoo公式ドキュメント](https://www.promptfoo.dev/docs/intro/)
@@ -206,7 +216,7 @@ jobs:
 - [Promptfoo Assertions & Metrics](https://www.promptfoo.dev/docs/configuration/expected-outputs/)
 - [Promptfoo GitHub Actions Integration](https://www.promptfoo.dev/docs/integrations/github-action/)
 
-詳細なリサーチ内容は [Issue #162](https://github.com/0h-n0/zen-auto-create-article/issues/162) を参照してください。
+詳細なリサーチ内容は [Issue #162](https://github.com/0h-n0/zen-auto-create-article/issues/162)、1次情報記事の詳細は [Issue #164](https://github.com/0h-n0/zen-auto-create-article/issues/164) を参照してください。
 
 ---
 
