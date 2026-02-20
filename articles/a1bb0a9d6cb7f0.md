@@ -10,7 +10,7 @@ published: false
 
 ## この記事でわかること
 
-- Gemini 2M・Claude 200K・GPT-4.1 128Kの性能比較と使い分け
+- Gemini 1M・Claude 200K（1M beta）・GPT-4.1 1Mの性能比較と使い分け
 - 「Lost in the Middle」問題を回避する**ドキュメント配置戦略**
 - XMLタグ構造化でClaudeの長文処理精度を**30%向上**させるテクニック
 - Context Cachingでコスト最大90%削減を実現する実装例
@@ -24,7 +24,7 @@ published: false
 
 ## 結論・成果
 
-ロングコンテキストLLMを適切に活用することで、**単一ドキュメント検索精度99%**を達成し、**RAGパイプライン構築の工数を70%削減**できます。ただし闇雲にトークンを投入すると「Lost in the Middle」問題で精度が劣化するため、本記事の配置戦略が不可欠です。
+ロングコンテキストLLMを適切に活用することで、**Needle-in-a-Haystack精度99%以上**（GPT-4.1では100%）を達成でき、単純な検索ではRAGパイプライン構築が不要になるケースもあります。ただし闇雲にトークンを投入すると「Lost in the Middle」問題で精度が劣化するため、本記事の配置戦略が不可欠です。
 
 :::message
 コンテキスト**削減**戦略については関連記事「[LLMコンテキストウィンドウ最適化：5層戦略でコスト70%削減](https://zenn.dev/0h_n0/articles/a350e2a0103cc4)」をご参照ください。本記事では「**大きなコンテキストを活かす**」方法に焦点を当てます。
@@ -34,13 +34,13 @@ published: false
 
 2026年2月時点の主要モデルの対応状況を整理しましょう。
 
-| モデル | コンテキスト長 | Needle検索精度 | Context Caching |
+| モデル | コンテキスト長 | Needle検索精度 | Caching機能 |
 |--------|--------------|---------------|----------------|
-| **Gemini 2.5 Pro** | 1M（最大2M） | 99%+（複数needleでやや劣化） | ✅ |
-| **Claude Opus 4.6** | 200K | 99%+（複数needleでも安定） | ❌ |
-| **GPT-4.1** | 128K（最大1M） | 98%+（複数needleでやや劣化） | ✅ |
+| **Gemini 2.5 Pro** | 1M（2Mは今後対応予定） | 99%+（複数needleでやや劣化） | ✅ Context Caching |
+| **Claude Opus 4.6** | 200K（1Mはbeta） | 99%+（複数needleでも安定） | ✅ Prompt Caching |
+| **GPT-4.1** | 1M | 100%（全位置で完全検索） | ✅ |
 
-**なぜこの比較が重要か**: 単純なコンテキスト長だけでなく、**複数情報の同時検索精度**と**キャッシュ対応**が本番運用で決定的な差を生みます。Geminiは最大2Mトークンに対応しますが、複数の情報を同時検索する場面ではClaudeの安定性が光ります。
+**なぜこの比較が重要か**: 単純なコンテキスト長だけでなく、**複数情報の同時検索精度**と**キャッシュ対応**が本番運用で決定的な差を生みます。GPT-4.1は1Mで100%のNeedle精度を達成していますが、複数情報の同時検索ではClaudeの安定性が際立ちます。Claude 1Mはbeta（`anthropic-beta: context-1m-2025-08-07`ヘッダー、Tier 4以上が必要）です。
 
 > コンテキストウィンドウが大きいからといって、常にすべてを投入する必要はありません。「本当に必要なデータ量」を見極めることが出発点です。
 
@@ -50,7 +50,7 @@ published: false
 
 ### 配置の基本原則とXMLタグ構造化
 
-Anthropicの公式ドキュメントでは、**20K+トークンのデータをプロンプト先頭に配置**し、クエリを末尾に置くことで応答品質が最大**30%向上**すると報告されています。
+Anthropicの[公式ドキュメント](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/long-context-tips)では、**20K+トークンのデータをプロンプト先頭に配置**し、クエリを末尾に置くことで応答品質が最大**30%向上**すると報告されています。
 
 ```python
 # long_context_prompt.py
@@ -88,12 +88,12 @@ QUOTE_FIRST_PROMPT = """
 
 ### Many-Shot In-Context Learning
 
-従来の数個のFew-Shot例ではなく、**数百〜数千の例を直接投入**することで、ファインチューニングに匹敵する精度を実現できます。
+従来の数個のFew-Shot例ではなく、**数百〜数千の例を直接投入**することで、タスクによってはファインチューニングに近い精度を実現できます（[Agarwal et al., NeurIPS 2024](https://arxiv.org/abs/2404.11018)）。
 
 ```python
 # many_shot_icl.py
 def build_many_shot_prompt(examples: list[dict], query: str) -> str:
-    """500件の例でFew-Shot比20%精度向上を実現"""
+    """数百件の例でFew-Shotを大幅に上回る精度を実現"""
     examples_xml = ""
     for ex in examples[:500]:
         examples_xml += f'<example>\n<input>{ex["input"]}</input>\n<output>{ex["output"]}</output>\n</example>\n'
@@ -104,7 +104,7 @@ def build_many_shot_prompt(examples: list[dict], query: str) -> str:
 
 ### Context Cachingの実装
 
-Gemini APIのContext Cachingで、同じドキュメントへの繰り返しクエリのコストを最大**90%削減**できます。
+Gemini Context CachingやClaude [Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)で、繰り返しクエリのコストを最大**90%削減**できます。
 
 ```python
 # gemini_context_caching.py
@@ -127,7 +127,7 @@ response = client.models.generate_content(
 )
 ```
 
-**制約条件**: キャッシュ保持にストレージコスト（時間課金）が発生します。短時間に集中クエリする「チャットボット型」では効果大ですが、1日1回のバッチ処理では効果が限定的です。
+**制約条件**: キャッシュ保持にストレージコスト（時間課金）が発生します。Geminiはttl指定、Claude Prompt Cachingはデフォルト5分（1時間オプションあり）です。短時間に集中クエリする「チャットボット型」では効果大ですが、1日1回のバッチ処理では効果が限定的です。
 
 ## ロングコンテキストとRAGの使い分けを判断する
 
@@ -140,15 +140,15 @@ response = client.models.generate_content(
 | 更新頻度 | 低頻度 | 高頻度（リアルタイム） |
 | コスト感度 | 精度優先 | コスト最適化優先 |
 
-**ハマりポイント**: ロングコンテキストで全ドキュメントを投入した方がRAGより高精度と思い込みがちですが、Google DeepMindの研究では**データ量が多いほどRAGの精度優位性が増す**ことが示されています。200K〜500Kトークンではロングコンテキストが有利ですが、それ以上ではRAG併用が不可欠です。
+**ハマりポイント**: 研究（[Long Context vs. RAG, 2025](https://arxiv.org/abs/2501.01880)）では、ロングコンテキストが精度面で平均的に優位な一方、**コスト効率ではRAGに大きな利点**があります。コンテキスト長の上限を超えるデータ量ではRAG併用が不可欠です。
 
 ## まとめと次のステップ
 
 **まとめ:**
 
-- **ドキュメント先頭配置**とXMLタグ構造化で精度30%向上が見込める
-- **Many-Shot ICL**は500例投入でファインチューニングに匹敵する精度を低コストで実現
-- **Context Caching**は繰り返しクエリでコスト90%削減の可能性
+- **ドキュメント先頭配置**とXMLタグ構造化で最大30%の精度向上が見込める（Anthropic公式ドキュメントより）
+- **Many-Shot ICL**は数百例投入でタスクによってはファインチューニングに近い精度を低コストで実現
+- **Context Caching / Prompt Caching**は繰り返しクエリでコスト最大90%削減の可能性
 - ロングコンテキスト vs RAGは二者択一ではなく**ハイブリッドが最適解**
 
 **次にやるべきこと:**
@@ -156,6 +156,16 @@ response = client.models.generate_content(
 1. 「ドキュメント先頭配置 + クエリ末尾配置」のA/Bテストを自身のユースケースで実施
 2. 既存のFew-Shot例を50〜100件に拡大し、Many-Shotの精度改善を検証
 3. Gemini Context Cachingの料金シミュレーションでコスト削減効果を試算
+
+## 関連する深掘り記事
+
+本記事で扱ったトピックの1次情報を深掘りした記事です。
+
+- [論文解説: Lost in the Middle — LLMはロングコンテキストをどう使うか (2307.03172)](https://0h-n0.github.io/posts/paper-2307-03172/)
+- [NeurIPS 2024論文解説: Found in the Middle — Ms-PoEでLost in the Middle問題を解決する (2403.04797)](https://0h-n0.github.io/posts/paper-2403-04797/)
+- [論文解説: TTT-E2E — テスト時学習でロングコンテキストLLMのメモリ・速度限界を突破する (2512.23675)](https://0h-n0.github.io/posts/paper-2512-23675/)
+- [Anthropic解説: Effective Context Engineering for AI Agents](https://0h-n0.github.io/posts/techblog-anthropic-context-engineering/)
+- [論文解説: RULER — ロングコンテキストLLM評価ベンチマーク (2402.10790)](https://0h-n0.github.io/posts/paper-2402-10790/)
 
 ## 参考
 
