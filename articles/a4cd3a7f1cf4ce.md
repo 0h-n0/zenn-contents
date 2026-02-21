@@ -13,7 +13,7 @@ published: false
 - **階層的検索（Hierarchical Retrieval）**の設計原理と、従来のRAGとの決定的な違い
 - LangGraphのサブグラフを活用した**3層検索パイプライン**（keyword → semantic → chunk_read）の実装方法
 - Claude Sonnet 4.6の**adaptive thinking**を検索判断に組み込むアーキテクチャ
-- A-RAG論文（2026年2月）の知見を活かした**検索精度94.5%**レベルの実装戦略
+- A-RAG論文（2026年2月）の知見を活かした**検索精度94.5%（HotpotQAベンチマーク）**に迫る実装戦略
 - 本番環境での**トークン消費量50%削減**と精度向上を両立するチューニング手法
 
 ## 対象読者
@@ -29,7 +29,7 @@ published: false
 
 階層的Agentic RAGパイプラインの導入により、以下の成果が得られました。
 
-- **検索精度**: 単純なベクトル検索（Naive RAG）の約72%から、**階層的検索で89〜94%へ向上**（A-RAG論文のHotpotQAベンチマーク基準）
+- **検索精度**: 単純なベクトル検索（Naive RAG）の約81%から、**階層的検索で最大94.5%へ向上**（A-RAG論文のHotpotQA LLM-Accベンチマーク、GPT-5-miniバックボーン使用時）
 - **トークン消費量**: Naive RAGの5,358トークンに対し、階層的検索では**2,737トークンに削減**（約49%減）
 - **開発効率**: LangGraph v1.0.9のサブグラフ機能により、**各検索レイヤーを独立開発・テスト可能**
 - **検索失敗パターンの変化**: 主な失敗原因が「検索能力不足（50%）」から「推論チェーンエラー（82%）」にシフトし、**検索そのものの品質は大幅に改善**
@@ -124,7 +124,7 @@ class RetrievalState(TypedDict):
     tool_name: str  # keyword_search | semantic_search | chunk_read
     tool_args: dict
     results: list[dict]
-    visited_chunks: set[str]  # 既読チャンクID（chunk_readの重複防止）
+    visited_chunks: list[str]  # 既読チャンクID（chunk_readの重複防止、JSON直列化のためlistを使用）
 ```
 
 **注意点:**
@@ -196,7 +196,7 @@ def semantic_search(query: str, top_k: int = 5) -> list[dict]:
         results.append({
             "chunk_id": doc.metadata.get("chunk_id", ""),
             "sentence": doc.page_content[:200],  # 先頭200文字
-            "similarity": float(1 - score),  # FAISSはL2距離なので変換
+            "similarity": float(1 - score / 2),  # FAISSのL2距離→コサイン類似度（正規化ベクトル前提: L2²=2(1-cos_sim)）
         })
 
     return results
@@ -250,9 +250,11 @@ def build_retrieval_subgraph():
     def execute_tool(state: RetrievalState) -> dict:
         tool_fn = tool_map[state["tool_name"]]
         result = tool_fn.invoke(state["tool_args"])
-        visited = set(state.get("visited_chunks", set()))
+        visited = list(state.get("visited_chunks", []))
         if state["tool_name"] == "chunk_read":
-            visited.add(state["tool_args"].get("chunk_id", ""))
+            chunk_id = state["tool_args"].get("chunk_id", "")
+            if chunk_id not in visited:
+                visited.append(chunk_id)
         return {
             "results": result if isinstance(result, list) else [result],
             "visited_chunks": visited,
@@ -263,7 +265,7 @@ def build_retrieval_subgraph():
             return {"results": [{"error": "No results found"}]}
         if state["tool_name"] == "chunk_read":
             cid = state["tool_args"].get("chunk_id", "")
-            if cid in state.get("visited_chunks", set()):
+            if cid in state.get("visited_chunks", []):
                 return {"results": [{"warning": f"Chunk {cid} already read"}]}
         return {"results": state["results"]}
 
@@ -288,8 +290,8 @@ from langchain_anthropic import ChatAnthropic
 
 # Claude Sonnet 4.6の初期化（adaptive thinkingを有効化）
 llm = ChatAnthropic(
-    model="claude-sonnet-4-6-20260217",
-    max_tokens=8096,
+    model="claude-sonnet-4-6",
+    max_tokens=8192,
     # adaptive thinkingはデフォルトで有効
     # クエリの複雑度に応じて思考の深さが自動調整される
 )
@@ -335,8 +337,8 @@ def agent_node(state: MainState) -> dict:
 
 **なぜClaude Sonnet 4.6を選んだか:**
 - **adaptive thinking**: クエリの複雑度に応じて思考の深さが自動調整される。単純なキーワード検索なら即座に判断し、マルチホップ推論が必要なら深く考える
-- **1Mトークンコンテキスト**: 大量の検索結果を保持しながら推論できる
-- **tool_use性能**: SWE-bench Verified 79.6%のスコアが示すとおり、ツール選択の精度が高い
+- **200Kトークンコンテキスト（1Mはbeta）**: 大量の検索結果を保持しながら推論できる（[1Mコンテキストはbetaヘッダー指定時に利用可能](https://platform.claude.com/docs/en/build-with-claude/context-windows#1m-token-context-window)）
+- **tool_use性能**: SWE-bench Verified 79.6%のスコアに裏付けられた、高いコード生成・ツール実行能力
 - **コスト効率**: $3/$15 per million tokensで、Opusと同等のツール使用精度を実現
 
 **トレードオフ**: Claude Sonnet 4.6はadaptive thinkingによりレイテンシが可変です。単純クエリでは200ms程度、複雑なマルチホップ推論では2-3秒かかることがあります。リアルタイム性が厳密に要求される場合は、クエリルーターで事前に複雑度を判定し、単純クエリはadaptive thinkingをオフにする戦略も検討してください。
@@ -473,7 +475,7 @@ def route_query(query: str) -> QueryComplexity:
 
 **なぜルーターにHaiku 4.5を使うか:**
 - ルーティング判定は単純なタスクであり、高性能モデルは不要
-- Haiku 4.5は$0.80/$4.00 per million tokensで、Sonnet 4.6の約4分の1のコスト
+- Haiku 4.5は$1/$5 per million tokensで、Sonnet 4.6の約3分の1のコスト
 - レイテンシも数十ms程度で、ルーティングのオーバーヘッドは無視できる
 
 **ただし、ルーターの精度が低いと検索全体の品質に直結します。** 運用開始後は、ルーターの判定結果と最終的な回答品質のログを取り、誤分類パターンを特定して改善することが重要です。
@@ -581,7 +583,7 @@ LangGraphの`astream`メソッドで`stream_mode="updates"`を指定すると、
 **まとめ:**
 
 - **階層的検索**は、keyword_search / semantic_search / chunk_readの3層ツールをエージェントに公開し、**モデル自身が検索戦略を決定する**パラダイムです
-- A-RAG論文の知見では、この手法でHotpotQA 94.5%、トークン消費約50%削減を達成しています
+- A-RAG論文の知見では、この手法でHotpotQA 94.5%（LLM-Acc、GPT-5-miniバックボーン）、トークン消費約49%削減を達成しています
 - **LangGraph v1.0.9**のサブグラフ機能により、各検索レイヤーを独立して開発・テスト・改善できます
 - **Claude Sonnet 4.6**のadaptive thinkingにより、クエリの複雑度に応じた検索深度の動的制御が実現します
 - **クエリルーター**（Haiku 4.5）を組み合わせることで、コスト効率と精度のバランスを最適化できます
@@ -593,13 +595,23 @@ LangGraphの`astream`メソッドで`stream_mode="updates"`を指定すると、
 - **Step 3**: SearchMetricsで各レイヤーのボトルネックを特定し、チャンクサイズやtop_kをチューニングする
 - **Step 4**: Ragas（RAG評価フレームワーク）で定量評価を行い、A-RAGベンチマークと比較する
 
+## 関連する深掘り記事
+
+この記事で扱った技術の1次情報（arXiv論文・企業テックブログ）を深掘りした記事です。
+
+- [サーベイ解説: Agentic RAG — エージェント型検索拡張生成の体系的分類と設計パターン](https://0h-n0.github.io/posts/paper-2501-15228/)（arXiv: 2501.15228）
+- [論文解説: CoRAG — Chain-of-Retrieval拡張生成で段階的検索チェーンを最適化](https://0h-n0.github.io/posts/paper-2502-11443/)（arXiv: 2502.11443）
+- [論文解説: MCTS-RAG — モンテカルロ木探索で小規模LMの知識集約型推論を強化](https://0h-n0.github.io/posts/paper-2502-13178/)（arXiv: 2502.13178）
+- [論文解説: Smart RAG — クエリ分解×知識源評価×適応生成でRAG精度を段階的に改善](https://0h-n0.github.io/posts/paper-2502-03073/)（arXiv: 2502.03073）
+- [NVIDIA解説: Traditional RAG vs Agentic RAG — 5段階ワークフローとAI-Q Blueprint](https://0h-n0.github.io/posts/techblog-nvidia-traditional-vs-agentic-rag/)（NVIDIA Developer Blog）
+
 ## 参考
 
 - [A-RAG: Scaling Agentic Retrieval-Augmented Generation via Hierarchical Retrieval Interfaces（arxiv:2602.03442）](https://arxiv.org/abs/2602.03442)
 - [LangGraph公式ドキュメント - Agentic RAG](https://docs.langchain.com/oss/python/langgraph/agentic-rag)
 - [LangGraph公式ドキュメント - Subgraphs](https://docs.langchain.com/oss/python/langgraph/use-subgraphs)
 - [Claude Sonnet 4.6 リリースノート](https://www.anthropic.com/news/claude-sonnet-4-6)
-- [LangGraph Adaptive RAG チュートリアル](https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_adaptive_rag/)
+- [Claude APIモデル一覧・料金](https://platform.claude.com/docs/en/about-claude/models/overview)
 - [Building Agentic RAG Systems with LangGraph: The 2026 Guide](https://rahulkolekar.com/building-agentic-rag-systems-with-langgraph/)
 
 ---
