@@ -579,6 +579,18 @@ def analyze_video_low_cost(video_path: str, prompt: str) -> str:
 
 ---
 
+## 関連する深掘り記事
+
+この記事で扱った技術の1次情報を深掘りした記事です。
+
+- [論文解説: Gemini — ネイティブマルチモーダルモデルの設計と画像・音声・動画統合処理](https://0h-n0.github.io/posts/paper-2312-11805/)
+- [論文解説: Gemini 1.5 — Sparse MoEで100万トークンコンテキストのマルチモーダル理解を実現](https://0h-n0.github.io/posts/paper-2403-05530/)
+- [Google解説: Gemini 2.5の動画理解 — VideoMME 85.2%達成のマルチモーダル技術詳細](https://0h-n0.github.io/posts/techblog-gemini-25-video-understanding/)
+- [論文解説: MIO — 音声・テキスト・画像・動画を統一トークンで理解・生成する基盤モデル](https://0h-n0.github.io/posts/paper-2409-17790/)
+- [論文解説: Qwen2-VL — 任意解像度の画像・動画を動的トークン化するVision-Language Model](https://0h-n0.github.io/posts/paper-2409-12191/)
+
+---
+
 :::message
 この記事はAI（Claude Code）により自動生成されました。内容の正確性については複数の情報源で検証していますが、実際の利用時は公式ドキュメントもご確認ください。
 :::
