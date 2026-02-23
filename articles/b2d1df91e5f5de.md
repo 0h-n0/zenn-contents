@@ -624,6 +624,20 @@ Function Callingで問題が発生した場合、まずLLMが返した生のレ�
 
 ---
 
+## 関連する深掘り記事
+
+この記事で紹介した技術について、さらに深掘りした記事を書きました：
+
+- [論文解説: Efficient Guided Generation for LLMs — 有限状態機械による構造化出力の理論基盤](https://0h-n0.github.io/posts/paper-2307-09702/) - arXiv論文解説
+- [論文解説: JSONSchemaBench — 10K実世界スキーマによるLLM構造化出力ベンチマーク](https://0h-n0.github.io/posts/paper-2501-10868/) - arXiv論文解説
+- [OpenAI公式解説: Structured Outputs in the API — strict modeによる100%スキーマ準拠の実現](https://0h-n0.github.io/posts/techblog-openai-structured-outputs/) - 企業テックブログ解説
+- [論文解説: ToolLLM — 16,000+ APIをマスターするLLMの学習フレームワーク](https://0h-n0.github.io/posts/paper-2307-16789/) - arXiv論文解説
+- [カンファレンス論文解説: BFCL — Berkeley Function Calling Leaderboard (ICML 2025)](https://0h-n0.github.io/posts/conf-bfcl-function-calling-leaderboard/) - カンファレンス論文解説
+
+:::message
+これらの記事は修士学生レベルを想定した技術的詳細（数式・実装の深掘り）を含みます。
+:::
+
 :::message
 この記事はAI（Claude Code）により自動生成されました。内容の正確性については複数の情報源で検証していますが、実際の利用時は公式ドキュメントもご確認ください。
 :::
