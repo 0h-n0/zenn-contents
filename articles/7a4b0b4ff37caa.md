@@ -528,6 +528,16 @@ OpenAI o3やDeepSeek R1に代表される**Reasoning Model**が普及し、CoT�
 - LangGraphで単一パターンのプロトタイプを構築し、精度とコストをベンチマークする
 - 本番適用に向けてハイブリッド設計でフェーズごとにパターンを組み合わせる
 
+## 関連する深掘り記事
+
+本記事で取り上げた各フレームワークについて、1次情報（原論文・公式ブログ）を詳細に解説した記事を公開しています。
+
+- [論文解説: Reflexion — 言語エージェントにおける自己反省型強化学習フレームワーク](https://0h-n0.github.io/posts/paper-2303-11366/)（arXiv: 2303.11366, NeurIPS 2023）
+- [論文解説: LATS — モンテカルロ木探索による言語エージェントの統合的推論・行動・計画フレームワーク](https://0h-n0.github.io/posts/paper-2310-04406/)（arXiv: 2310.04406, ICML 2024）
+- [論文解説: ReWOO — 観測なし推論による効率的なツール利用エージェントフレームワーク](https://0h-n0.github.io/posts/paper-2305-18323/)（arXiv: 2305.18323）
+- [論文解説: CodeAct — 実行可能Pythonコードによるエージェント行動の統一フレームワーク](https://0h-n0.github.io/posts/paper-2402-01817/)（arXiv: 2402.01817）
+- [Google Research解説: ReAct — 推論と行動のシナジーによるLLMエージェントの基盤パラダイム](https://0h-n0.github.io/posts/techblog-google-react-reasoning-acting/)
+
 ## 参考
 
 - [ReAct: Synergizing Reasoning and Acting in Language Models（Yao et al., 2022）](https://arxiv.org/abs/2210.03629)
