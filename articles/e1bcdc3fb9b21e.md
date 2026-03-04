@@ -47,9 +47,6 @@ graph TD
     C --> D[Layer 0: 精密探索]
     D --> E[Top-K 結果]
 
-    style B fill:#e1f5fe
-    style C fill:#b3e5fc
-    style D fill:#81d4fa
 ```
 
 **主要パラメータ**:
