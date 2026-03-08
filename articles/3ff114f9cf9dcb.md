@@ -465,11 +465,11 @@ def answer_with_verification(
 
 def _extract_search_results(agent_result) -> str:
     """エージェントのツール呼び出し結果から検索結果テキストを抽出する"""
-    for message in agent_result.messages:
-        if hasattr(message, "tool_results"):
-            for tool_result in message.tool_results:
-                if tool_result.get("name") == "search_internal_docs":
-                    return tool_result.get("content", "")
+    for message in agent_result.message["content"]:
+        if message.get("toolUse"):
+            tool_use = message["toolUse"]
+            if tool_use.get("name") == "search_internal_docs":
+                return tool_use.get("content", "")
     return ""
 ```
 
@@ -512,7 +512,7 @@ agentcore configure --entrypoint agentcore_app.py
 # IAMロール（BedrockFullAccess + S3ReadOnly）を指定
 
 # 起動
-agentcore launch \
+agentcore deploy \
   --env KNOWLEDGE_BASE_ID=YOUR_KB_ID \
   --env GUARDRAIL_ID=YOUR_GUARDRAIL_ID
 ```
