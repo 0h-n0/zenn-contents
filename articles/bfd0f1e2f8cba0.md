@@ -178,6 +178,20 @@ LLM Judgeには固有の脆弱性があり、2025年の研究では**最大73.8%
 - [Lakera PINT Benchmark](https://github.com/lakeraai/pint-benchmark)
 - [Adversarial Attacks on LLM-as-a-Judge](https://arxiv.org/abs/2504.18333)
 
+## 関連する深掘り記事
+
+この記事で紹介した技術について、さらに深掘りした記事を書きました：
+
+- [ACL 2025論文解説: PIGuard — 過剰防御を抑制するプロンプトインジェクション検出](https://0h-n0.github.io/posts/conf-piguard-acl2025/) - conference解説
+- [論文解説: Prompt Injection Attacks and Defenses — 統一分類と10種防御](https://0h-n0.github.io/posts/paper-2310-12815/) - arxiv解説
+- [NAACL 2025論文解説: Attention Tracker — 訓練不要のプロンプトインジェクション検出](https://0h-n0.github.io/posts/conf-attention-tracker-naacl2025/) - conference解説
+- [Meta AI解説: LlamaFirewall — AIエージェント向けガードレールシステム](https://0h-n0.github.io/posts/techblog-meta-llamafirewall/) - tech_blog解説
+- [NVIDIA解説: セマンティックプロンプトインジェクション — 視覚記号でガードレール突破](https://0h-n0.github.io/posts/techblog-nvidia-semantic-prompt-injection/) - tech_blog解説
+
+:::message
+これらの記事は修士学生レベルを想定した技術的詳細（数式・実装の深掘り）を含みます。
+:::
+
 ---
 
 :::message
